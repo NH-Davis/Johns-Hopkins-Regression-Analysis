@@ -1,0 +1,181 @@
+---
+title: "Regression Analysis Final Project"
+author: "NHartley"
+date: "2024-02-29"
+output: pdf_document
+---
+
+::: {style="font-size:18px"}
+**SUMMARY**
+:::
+
+The mtcars dataset originates from the 1974 Motor Trend US magazine, and it comprises fuel consumption (mpg, or miles per gallon) and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models). The dataset includes a dozen categories of information and is often used in statistical analysis and machine learning to demonstrate data exploration, visualization, and regression techniques. It's popular for its simplicity yet effectiveness in teaching various concepts related to data science and statistics.
+
+::: {style="font-size:18px"}
+**DATASET COMPONENTS:**
+:::
+
+-   mpg: Miles/(US) gallon
+-   qsec: 1/4 mile time
+-   cyl: Number of cylinders
+-   vs: Engine (0 = V-shaped, 1 = straight)
+-   disp: Displacement (cu.in.)
+-   am: Transmission (0 = automatic, 1 = manual)
+-   hp: Gross horsepower
+-   gear: Number of forward gears
+-   drat: Rear axle ratio
+-   carb: Number of carburetors
+-   wt: Weight (1,000 lbs)
+
+::: {style="font-size:18px"}
+**PROJECT GOAL:**
+
+-   Determine if an automatic or manual transmission is better for MPG
+-   Quantify the MPG difference between automatic and manual transmissions
+:::
+
+::: {style="font-size:18px"}
+**ANALYSIS:**
+
+-   Determine if an automatic or manual transmission is better for MPG
+-   Quantify the MPG difference between automatic and manual transmissions
+:::
+
+```{r stats, echo=FALSE}
+# Load necessary libraries
+library(ggplot2)
+library(GGally)
+library(patchwork)
+
+# mtcars dataset is already loaded
+data(mtcars)
+
+# Convert 'am' to a more descriptive factor
+mtcars$am <- factor(mtcars$am, labels = c("Automatic", "Manual"))
+
+# Display introduction text for column descriptions
+cat("\n\nThe mtcars data set consists of the following variables and data types:\n")
+column_descriptions <- list(
+  mpg = "Miles/(US) gallon",
+  cyl = "Number of cylinders",
+  disp = "Displacement (cu.in.)",
+  hp = "Gross horsepower",
+  drat = "Rear axle ratio",
+  wt = "Weight (1000 lbs)",
+  qsec = "1/4 mile time",
+  vs = "Engine shape (0 = V-shaped, 1 = straight)",
+  am = "Transmission (0 = automatic, 1 = manual)",
+  gear = "Number of forward gears",
+  carb = "Number of carburetors"
+)
+
+for (col in names(mtcars)) {
+  if (col %in% names(column_descriptions)) {
+    cat(col, ":", column_descriptions[[col]], "- Data type:", class(mtcars[[col]]), "\n")
+  }
+}
+
+summary_table <- summary(mtcars)
+
+print(summary_table)
+
+cat("\nSummary Statistics for MPG by Transmission Type:\n\n")
+# Calculate and print summary statistics for MPG by transmission type
+summary_stats <- with(mtcars, tapply(mpg, am, function(x) {
+  c(mean = mean(x), sd = sd(x))
+}))
+print(summary_stats)
+
+
+# T-Test
+t_test_result <- t.test(mpg ~ am, data = mtcars)
+print(t_test_result)
+cat("\nThe t-test results indicate if the difference in MPG between transmission types is statistically significant.\n")
+cat("A p-value less than 0.05 suggests a significant difference.\n\n")
+
+# Linear Regression
+model <- lm(mpg ~ am, data = mtcars)
+summary(model)
+cat("\nThe linear regression model quantifies the relationship between transmission type and MPG.\n")
+cat("The coefficient for 'amManual' represents the difference in MPG when switching from automatic to manual, controlling for other factors.\n\n")
+
+# More Comprehensive Model
+comprehensive_model <- lm(mpg ~ am + wt + hp + cyl, data = mtcars)
+summary(comprehensive_model)
+cat("\nThe comprehensive model considers additional variables, providing insight into their relationship with MPG alongside transmission type.\n\n")
+```
+
+::: {style="font-size:18px"}
+**PLOTS:**
+:::
+
+```{r plots, echo=FALSE}
+library(ggplot2)
+library(patchwork)
+
+# Assuming mtcars dataset is already loaded and prepared
+data(mtcars)
+mtcars$am <- factor(mtcars$am, labels = c("Automatic", "Manual"))
+
+# 1. Boxplot for MPG by Transmission Type
+p1 <- ggplot(mtcars, aes(x = am, y = mpg)) +
+  geom_boxplot() +
+  labs(title = "MPG Comparison by Transmission Type")
+
+# 2. Scatterplot with Regression Line for MPG by Weight
+p2 <- ggplot(mtcars, aes(x = wt, y = mpg, color = am)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "MPG by Weight and Transmission Type")
+
+# Assuming the linear model is named 'model'
+model <- lm(mpg ~ wt * am, data = mtcars)
+mtcars$residuals <- residuals(model)
+
+# 3. QQ Plot for Residuals (Adjusted for use with ggplot2)
+p3 <- ggplot(mtcars, aes(sample = residuals)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "QQ Plot for Model Residuals")
+
+# 4. Plotting the Residuals vs. Fitted Values for Diagnostics
+p4 <- ggplot(mtcars, aes(x = fitted(model), y = residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs. Fitted Values")
+
+# Adjust the font size of the plot fonts directly
+p1 <- p1 + theme(plot.title = element_text(size = 8),
+                 axis.text.x = element_text(size = 8),
+                 axis.text.y = element_text(size = 8))
+p2 <- p2 + theme(plot.title = element_text(size = 8),
+                 axis.text.x = element_text(size = 8),
+                 axis.text.y = element_text(size = 8))
+p3 <- p3 + theme(plot.title = element_text(size = 8),
+                 axis.text.x = element_text(size = 8),
+                 axis.text.y = element_text(size = 8))
+p4 <- p4 + theme(plot.title = element_text(size = 8),
+                 axis.text.x = element_text(size = 8),
+                 axis.text.y = element_text(size = 8))
+
+# Combine the plots with adjusted titles using patchwork
+p_combined <- p1 + p2 + p3 + p4 + 
+  plot_layout(ncol = 2)
+
+# Print the combined plot
+print(p_combined)
+
+# Save the combined plot with increased size
+ggsave("combined_plot.pdf", plot = p_combined, width = 10, height = 8, units = "in")
+
+
+```
+
+
+:::{style="font-size:18px"}
+
+**CONCLUSION**
+
+::: 
+
+The results of the analysis indicate that there is a statistically significant difference in fuel economy (MPG) between vehicles which have automatic and manual transmissions. Average MPG is noticeably higher for manual transmissions and the range of potential outcomes is also better with the bottom of the interquartile range for manual transmissions exceeding the top of the interquartile range for automatic transmissions. The average MPG for manual transmission vehicles is 24.4 MPG while the average MPG for automatic transmission vehicles was substantially lower at 17.1 MPG, leaving a gap of approximately 7.3 MPG between the two groups.
